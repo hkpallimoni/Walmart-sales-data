@@ -1,0 +1,247 @@
+---
+title: "Future Sales Prediction"
+author: "Harish Kumar Pallimoni"
+date: "20/06/2022"
+output: 
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(knitr)
+library(formattable)
+library(ggplot2)
+library(tidyr)
+```
+
+## Summary
+Companie in the traditional days have been operating in production whitout putting into consideration the number of sales and demand for the products they produce. Therefore, due to increased competition among businesses, there have been the need to have most effective and accurate technique that can help in decision making for businesses in terms of the number of goods that need to be produced depending on sales and demand. Therefore, this brings in the need to have a sales prediction model that will be used for this case. With sales prediction, it is helpful to the companies as it provides them with a method where they can gain valuable insight from their sales and predict on future sales as well. There will be proper stock management and production planning for businesses who decides to conduct sales prediction. Therefore, this paper has implemented machine learning techniques like random forest and decision tree to develop a model that can be used for future sales predictions. the project utilize a clean_sales_data retrieved from Kaggle.com website for an online store named Walmart stores. From the results of this project, it is clear that the created multilinear regression machine learning algorithm is suggested to be the most suitable model that can be used in future sales predictions. However, there needs to have more research and implementation of random forest and decision tree models as recommended in this paper for sales prediction. 
+
+## Introduction
+
+This project's main focus is to implement a reliable and effecient sales prediction mechanism through the use of data mining techinques to ensure businesses achieve the highest possible profits and they have a competitive advantage over their competitors. The project utilize data from an Ecommerce business as this is the most competitive industry that is in need of prediction models with the highest possible reliability and accuracy for future sales predictions. With the sales prediction, it is possible for businesses to have insight into how they manage their resources, workforce as well as cashflow. Future sales prediction for many businesses is an essential aspect in planning and decision making. Future sales prediction provides businesses with an opportunity to effectively plan their business strategies.
+
+To achieve its purpose, the paper is divided into different sections. The first section is the introduction.In the next section,literature review, it states the review of various literatures associated with future sales predictions. The theory section provides some hypothesis for the project. The data section data cleaning process is highligheted. The fourth section is the methodology. Fifth section include results obtained for the project. The next section is the implications section where the recommendations have been provided. Lastly, is the conclusion section. 
+
+## Literature Review
+There is a constant search for better model in the sales predictions for many businesses to ensure that they have higher profits and remain competitive in the market. There are a number of challenges that are faced by businesses in search of the best and accurate technique for the prediction of sales. This challenges comes in as a result of the rapid growth of huge volumes of data that the eCommerce uses in their transaction. Therefore, in their comparative study, Shrivatava & Arya (2012) have explained the different clustering techniques for sales data. In the study by Rajagopal (2011), their analysis illustrated that in decision making process, it is very crucial to have the classification of data. Mann & Kaur (2013) in their paper indicated that any size of the data cn be transformed to reasonable format with the appropriate choce of a data mining technique. The authors also identified that effective decision making can be done in the case where there is appropriate sales prediction technique. As identified in the reviewed literature, it is clear that there needs to have the most accurate and efficient sales prediction technique for businesses that can handle any size of data. Therefore, the need to perform this project is identified to help and develop a multilinear regression model which is a machine learning algorithm that can be used for sales predictions. 
+
+## Theory
+H1:Holidays have an impact on total sales for the particular stores. 
+
+
+## Data
+
+The data used for this project is for the Walmart stores that contains sales transactions between 2010 and 2012. This clean_sales_data has been retrieved from  
+
+```{r echo=FALSE}
+#install.packages("MLmetrics")
+#install.packages("repr")
+#Calling libraries
+library("dplyr") #Calling dplyr function for data manipulation 
+library("ggplot2") # for data visualisation
+library("scales") #for change of scales in data visualisation
+library("zoo")
+library("tidyverse")
+library("tidyr")
+library("lubridate")
+library(car) #Companion to Applied Regression for Regression Visualisations
+require(stats)
+library(corrplot)
+library(caTools)
+library(MLmetrics)
+library("repr")
+```
+
+
+```{r echo=FALSE}
+salesdata <- read.csv("C:/Users/User/Downloads/WALMART_SALES_DATA.csv")
+head(salesdata)
+
+```
+
+Check for missing values in the column values.
+```{r}
+colSums(is.na(salesdata))
+```
+There are no missing values. Therefore, next we check for any duplicate values in the clean_sales_data. 
+```{r}
+#Check anyDuplicate Values
+all(duplicated(salesdata) == TRUE)
+```
+It is clear that the clean_sales_data has no duplicate values identified. 
+
+
+## Methodology
+The clean_sales_data salesdata is clean and therefore some analysis can be performed.
+First, we perform an analysis to identify the stores that have the most sales. 
+```{r}
+# Combine data by 'Store' and Find of 'Weekly_Sales' 
+sales_for_stores<- aggregate(Weekly_Sales ~ Store, data = salesdata, sum)
+
+#Change the column name of sales 
+colnames(sales_for_stores)[2] <- "Total_Sales_by_Store"
+
+#Find the Store that have the highest Sales 
+#Sort the Stores by Sales in descending order
+sales_for_stores <-arrange(sales_for_stores, desc(Total_Sales_by_Store)) 
+
+#Choosing the first store that comes in this order
+sales_for_stores[1,]
+
+```
+Perform an analysis on the impact of holidays on sales. 
+
+```{r echo=FALSE}
+#Create the holiday Data dataframe
+Dates_Holiday <- c("12-02-2010", "11-02-2011", "10-02-2012", "08-02-2013","10-09-2010", "09-09-2011", "07-09-2012", "06-09-2013","26-11-2010", "25-11-2011", "23-11-2012", "29- 11-2013","31-12-2010", "30-12-2011", "28-12-2012", "27-12-2013")
+holiday_event <-c(rep("Super Bowl", 4), rep("Labour Day", 4),rep("Thanksgiving", 4), rep("Christmas", 4))
+holiday_data <- data.frame(holiday_event,Dates_Holiday )
+
+#merging both dataframes
+salesdata2<-merge(salesdata,holiday_data, by.x= "Date", by.y="Dates_Holiday", all.x = TRUE)
+
+#Replacing null values in Event with No_Holiday 
+salesdata2$holiday_event = as.character(salesdata2$holiday_event) 
+salesdata2$holiday_event[is.na(salesdata2$holiday_event)]= "No_Holiday" 
+#Create a dataframe the mean of sales for No_Holiday and also mean of sales for different holiday_event
+sales_holiday<-aggregate(Weekly_Sales ~ holiday_event, data =salesdata2, mean)
+#Changing column names
+colnames(sales_holiday)[2] <- "Mean_Sales_by_Event_Type"
+view(sales_holiday)
+
+
+```
+
+Check the difference in sales between hoidays and non-holidays.
+```{r}
+#Filter the holiday dates and find mean of Weekly Sales 
+Dates_Holiday <- filter(salesdata2,Holiday_Flag ==1)
+Dates_Holiday_Sales<-summarise(group_by(Dates_Holiday,Date),mean(Weekly_Sales))
+
+#Caluclating mean of Weekly Sales for non holidays
+mean_non_holiday_sales <- mean(filter(salesdata2,Holiday_Flag ==0)$Weekly_Sales) 
+Dates_Holiday_Sales$higher_than_non_holiday <- Dates_Holiday_Sales[,2] > mean_non_holiday_sales
+```
+
+Next involved creating a the multilinear regression model to provide the sales predictions for Walmart stores. First, we create a dataframe with the columns essential to create the model. 
+```{r}
+#make a copy of the original data for alterations
+salesdata3 <- salesdata
+
+#select only first store.
+salesdata3<- dplyr::filter(salesdata3, Store ==1)
+
+#changing date column to date format
+salesdata3$Date <- lubridate::dmy(salesdata3$Date)
+salesdata3 <- dplyr::arrange(salesdata3,Date)
+
+#Create a week number,month,quarter column in dataframe
+salesdata3$Week_Number <- seq(1:length(unique(salesdata3$Date)))
+
+#add quarter and month columns
+salesdata3$month <- lubridate::month(salesdata3$Date)
+salesdata3$quarter <- lubridate::quarter(salesdata3$Date)
+
+##Create holiday event type dataframe
+Dates_Holiday <- c("12-02-2010", "11-02-2011", "10-02-2012", "08-02-2013","10-09-2010", "09-09-2011", "07-09-2012", "06-09-2013","26-11-2010", "25-11-2011", "23-11-2012", "29-11-2013","31-12-2010", "30-12-2011", "28-12-2012", "27-12-2013")
+
+#assigning date format to Dates_Holiday vector
+Dates_Holiday <- lubridate::dmy(Dates_Holiday)
+
+#Creating holiday_event vector
+holiday_event <-c(rep("Super Bowl", 4), rep("Labour Day", 4),rep("Thanksgiving", 4), rep("Christmas", 4))
+
+#Creating dataframe with holiday_event and date
+Holidays_Data <- data.frame(holiday_event,Dates_Holiday)
+
+#merging both dataframes
+salesdata3<-merge(salesdata3,Holidays_Data, by.x= "Date", by.y="Dates_Holiday", all.x = TRUE)
+
+#Replacing null values in Event with No_Holiday
+salesdata3$holiday_event = as.character(salesdata3$holiday_event)
+salesdata3$holiday_event[is.na(salesdata3$holiday_event)]= "No_Holiday"
+
+```
+Remove unnecessary columns from the clean_sales_data and change structure of the holiday_event column.
+```{r}
+salesdata3$Date <-NULL
+salesdata3$Store <- NULL
+salesdata3$holiday_event <- as.factor(salesdata3$holiday_event)
+str(salesdata3)
+
+salesdata3$Holiday_Flag <- as.numeric(salesdata3$Holiday_Flag)
+salesdata3$Week_Number <- as.numeric(salesdata3$Week_Number)
+salesdata3$quarter <- as.numeric(salesdata3$quarter)
+```
+```{r}
+set.seed(123) 
+library(caTools)
+
+clean_sales_data <- salesdata3
+
+#Create a sample split and split testing & training sets in 20-80 ratio respectively
+sample = sample.split(clean_sales_data, SplitRatio = 0.8) 
+# Return a vector with T for 80% of data
+trainingSet = subset(clean_sales_data, sample == T)
+testingSet = subset(clean_sales_data, sample == F)
+
+# Create model 
+model = lm(formula = Weekly_Sales ~ . , data = trainingSet)
+```
+
+
+
+## Results
+Various results have been identified for this project.First, the analysis for identifying the highest selling store illustrate that store 20 has the highest number of sales. 
+```{r echo=FALSE}
+# Converting Store column into factor so that order won't change for graph 
+sales_for_stores$Store <- as.character(sales_for_stores$Store)
+sales_for_stores$Store <- factor(sales_for_stores$Store, levels=unique(sales_for_stores$Store))
+#Plotting Store vs TotalSales
+options(repr.plot.width = 14, repr.plot.height = 8)
+plot1<-ggplot(data=sales_for_stores, aes(x=Store, y=Total_Sales_by_Store)) + geom_bar(stat="identity",fill="steelblue") +
+theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=0.5))+ scale_x_discrete(breaks = salesdata$Store)+
+scale_y_continuous(labels = label_number(suffix = " M", scale = 1e-6))+ ggtitle('Store vs Sales')+
+theme(plot.title = element_text(hjust = 0.5))+
+xlab("Stores") + ylab("Total Sales")
+plot1
+```
+The analysis for sales during holidays and non-holidays also gave some interesting results. First, it was identified that there were higher sales for the Thanks giving, Labour day, and Super Bowl holidays than mean sales for Non Holiday. 
+```{r}
+view(Dates_Holiday_Sales)
+```
+
+The model provided predictions on the sales as illustrated in the scatterplot below. 
+
+```{r echo=FALSE}
+
+options(repr.plot.width = 10, repr.plot.height = 10)
+
+# Visualizing train set results
+y_pred_train = predict(model, newdata = trainingSet)
+ggplot() + 
+  geom_point(aes(x=trainingSet$Weekly_Sales,y=y_pred_train), size=3,colour = "Blue") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_y_continuous(labels = label_number(suffix = " K", scale = 1e-3))+
+  scale_x_continuous(labels = label_number(suffix = " K", scale = 1e-3))+
+  ggtitle('Actual Sales vs Predicted Sales - Train Data')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  xlab("Actual Sales") + ylab("Predicted Sales")
+
+```
+
+## Implications
+
+The project in this paper can be improvised in various ways. First, further research in the model would consider all stores data for sales prediction, since in this project we only considered the first store. In addition, further work on this project should consider using more advances machine learning models like Random Forest and Decision Tree. For proper sampling of data, I would recommend the use of K cross validation techniques for future work. 
+## Conclusion
+
+The paper included the analysis of sales from Walmart stores, an ecommerce business. In addition, using the multilinear regression model, predictions on sales was performed. From the project, it is clear that there is positive impact on the sales by holidays. Therefore, the theory, holidays have an impact on total sales for the particular stores., is true. 
+
+## References
+
+Rajagopal, D. (2011). Customer data clustering using data mining technique. arXiv preprint arXiv:1112.2663.
+
+Shrivastava, V., & Arya, N. (2012). A study of various clustering algorithms on retail sales data. Int. J. Comput. Commun. Netw, 1(2).
